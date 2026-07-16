@@ -1,0 +1,25 @@
+Phase,Feature Name,Data Type,Description
+1. Raw/Baseline,Ship_date,Datetime,The exact date the shipment was picked up from the origin facility.
+1. Raw/Baseline,orig_cntry_cd,String/Encoded,"The ISO country code of the origin warehouse (e.g., 'US', 'GB')."
+1. Raw/Baseline,dest_cntry_cd,String/Encoded,The ISO country code of the destination.
+1. Raw/Baseline,dest_pstl_cd,String/Encoded,The destination postal code / zip code.
+1. Raw/Baseline,Quoted_Transit_Days,Integer,"The standard, static transit time quoted to the customer by the legacy matrix."
+1. Raw/Baseline,Actual_Transit_Days (or Calculated_Actual_Days),Float,The true number of days it took for the shipment to arrive. Used as the primary target variable for the regression models.
+1. Raw/Baseline,Delivered_in_Commit,Integer,"Binary flag (1 = On-Time, 0 = Late/Delayed). Used to calculate historical Net Service Level (NSL)."
+2. Preprocessing (Phase 2),Pickup_Day_of_Week,Integer,"The day of the week the shipment was picked up (0 = Monday, 6 = Sunday)."
+2. Preprocessing (Phase 2),Pickup_Month,Integer,"The month of pickup (1 = Jan, 12 = Dec), capturing seasonal volume spikes."
+2. Preprocessing (Phase 2),Is_Weekend_Pickup,Integer,"Binary flag (1 = Yes, 0 = No) indicating if the package was picked up on a Saturday or Sunday."
+2. Preprocessing (Phase 2),Lane_Historical_Avg,Float,"The rolling historical average of actual transit days for a specific Origin -> Destination country pair, strictly using past data."
+2. Preprocessing (Phase 2),Postal_Rolling_7D_Delay_Rate,Float,A rolling 7-day metric capturing the percentage of delayed shipments at a specific destination postal code. Serves as a real-time network congestion indicator.
+3. Modeling (Phase 3),Total_Volume,Integer,Total historical shipments to a specific postal code.
+3. Modeling (Phase 3),Delay_Rate,Float,The percentage of shipments to this postal code that missed their SLA.
+3. Modeling (Phase 3),Std_Dev_Days,Float,The standard deviation of transit time to this postal code (variance/volatility).
+3. Modeling (Phase 3),Cluster_ID,Integer,"The K-Means assigned behavioral risk profile (0-3), mapping to actionable groups like 'Golden Lanes' or 'Chronic Bottlenecks'."
+4. ML Predictions,Pred_LGBM_P50_Days,Float,LightGBM prediction for the realistic median transit time.
+4. ML Predictions,Pred_LGBM_P90_Days,Float,"LightGBM prediction for the conservative, 90th percentile transit time."
+4. ML Predictions,Pred_IsolationForest_P50_Days,Float,The baseline Random Forest median prediction.
+4. ML Predictions,Pred_IsolationForest_P90_Days,Float,"The P50 prediction adjusted via Isolation Forest. (+4 days added if flagged as an anomaly, +1 day otherwise)."
+4. ML Predictions,Pred_Survival_P50_Days,Float,Weibull AFT prediction: the day the package hits a 50% probability of delivery.
+4. ML Predictions,Pred_Survival_P90_Days,Float,Weibull AFT prediction: the day the package hits a 90% probability of delivery.
+4. ML Predictions,[Model]_Quoted_Transit_Days,Float,"The final transit quote assigned by the Phase 4 Business Logic, which evaluates the variance between P50 and P90 before deciding which to use."
+4. ML Predictions,[Model]_Delivered_in_Commit,Integer,"Simulated binary flag (1 = On-Time, 0 = Late) used to calculate the AI's hypothetical Net Service Level (NSL) improvement."
